@@ -337,8 +337,8 @@ def pull_model_if_needed(model_name: str) -> bool:
         for progress in client.pull(model_name, stream=True):
             if 'status' in progress:
                 status = progress.get('status', '')
-                completed = progress.get('completed', 0)
-                total = progress.get('total', 0)
+                completed = progress.get('completed') or 0
+                total = progress.get('total') or 0
                 if total > 0:
                     pct = (completed / total) * 100
                     print(f"  Downloading: {pct:.1f}% - {status}")
