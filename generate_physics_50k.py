@@ -36,7 +36,7 @@ except ImportError:
 # CONFIGURATION
 # =============================================================================
 
-MODEL_NAME = "deepseek-r1:1.5b"
+MODEL_NAME = "deepseek-r1:8b"
 OUTPUT_FILE = "physics1_book_50k.md"
 CHECKPOINT_FILE = "generation_checkpoint.json"
 FACTS_CACHE_FILE = "facts_cache.json"
@@ -47,9 +47,10 @@ REPETITION_PENALTY = 1.2
 MAX_TOKENS_PER_CHUNK = 200  # ~100-150 words
 
 # Target structure
-TARGET_TOTAL_WORDS = 50000
+TARGET_TOTAL_WORDS = 10000  # Test mode: Only Chapter 1
 WORDS_PER_CHAPTER = 10000
 SECTIONS_PER_CHAPTER = 25
+CHAPTERS_TO_GENERATE = 1  # Test mode: Only generate Chapter 1
 CHUNKS_PER_SECTION = 4  # Each section has 3-5 chunks
 TARGET_WORDS_PER_CHUNK = 120
 
@@ -682,8 +683,8 @@ def generate_textbook():
     """Main function to generate the complete Physics 1 textbook."""
     
     print("="*70)
-    print("PHYSICS 1 TEXTBOOK GENERATOR")
-    print("Using local Ollama model: deepseek-r1:1.5b")
+    print("PHYSICS 1 TEXTBOOK GENERATOR (TEST MODE - Chapter 1 Only)")
+    print(f"Using local Ollama model: {MODEL_NAME}")
     print("="*70)
     
     # Check Ollama connection
@@ -742,8 +743,13 @@ def generate_textbook():
     # Create Ollama client
     client = ollama.Client(host=OLLAMA_HOST)
     
-    # Generate each chapter
+    # Generate each chapter (limited to CHAPTERS_TO_GENERATE for test mode)
     for ch_idx, (chapter_title, sections) in enumerate(chapters, 1):
+        # Stop if we've generated enough chapters (test mode)
+        if ch_idx > CHAPTERS_TO_GENERATE:
+            print(f"\nTest mode complete: Generated {CHAPTERS_TO_GENERATE} chapter(s)")
+            break
+            
         # Skip completed chapters
         if ch_idx <= start_chapter and resumed:
             if ch_idx < start_chapter:
