@@ -324,26 +324,58 @@ def pull_model_if_needed(model_name: str) -> bool:
     try:
         client = ollama.Client(host=OLLAMA_HOST)
         models = client.list()
-        model_names = [m.get('name', '') for m in models.get('models', [])]
         
-        if model_name in model_names or any(model_name.split(':')[0] in m for m in model_names):
-            print(f"Model '{model_name}' is already available.")
+        # Handle different response formats
+        model_list = []
+        if isinstance(models, dict):
+            model_list = models.get('models', [])
+        elif hasattr(models, 'models'):
+            model_list = models.models
+            
+        model_names = []
+        for m in model_list:
+            if isinstance(m, dict):
+                name = m.get('name', '')
+            else:
+                name = getattr(m, 'name', '')
+            if name:
+                model_names.append(name)
+        
+        print(f"Available models: {model_names}")
+        
+        # Check for exact match or partial match
+        if model_name in model_names:
+            print(f"Model '{model_name}' is already available (exact match).")
             return True
+        
+        # Check partial match (e.g., 'deepseek-r1' matches 'deepseek-r1:1.5b')
+        model_base = model_name.split(':')[0]
+        for name in model_names:
+            if model_base in name or name.split(':')[0] == model_base:
+                print(f"Model '{model_name}' found as '{name}'.")
+                return True
             
         print(f"Model '{model_name}' not found. Pulling from Ollama registry...")
         print("This may take several minutes depending on your internet connection.")
         
-        # Pull the model
-        for progress in client.pull(model_name, stream=True):
-            if 'status' in progress:
-                status = progress.get('status', '')
-                completed = progress.get('completed') or 0
-                total = progress.get('total') or 0
-                if total > 0:
-                    pct = (completed / total) * 100
-                    print(f"  Downloading: {pct:.1f}% - {status}")
-                else:
-                    print(f"  {status}")
+        # Pull the model with better None handling
+        print(f"  Starting download of {model_name}...")
+        try:
+            for progress in client.pull(model_name, stream=True):
+                if 'status' in progress:
+                    status = progress.get('status', '')
+                    completed = progress.get('completed')
+                    total = progress.get('total')
+                    if completed is not None and total is not None and total > 0:
+                        pct = (completed / total) * 100
+                        print(f"  Downloading: {pct:.1f}% - {status}")
+                    elif 'status' in progress:
+                        print(f"  {progress['status']}")
+        except Exception as pull_error:
+            print(f"  Error during pull: {pull_error}")
+            # Try non-streaming pull as fallback
+            print("  Trying non-streaming pull...")
+            client.pull(model_name, stream=False)
                     
         print(f"Model '{model_name}' successfully pulled!")
         return True
