@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
 """
-generate_physics_50k.py - Generate a 50,000-word Physics 1 textbook using ONLY local Ollama model.
+generate_physics_100k.py - Generate a 100,000-word Physics textbook using ONLY local Ollama model.
 
 This script implements a chunked generation strategy with hallucination guards:
 - Generates content in tiny 100-200 word chunks
 - Pre-defines facts before generating prose
-- Uses low temperature (0.1) and repetition penalty (1.2)
+- Uses moderate temperature (0.3) for small models to prevent looping
+- Repetition penalty (1.1) to avoid redundancy
 - Clears conversation history after each chunk
 - Self-consistency checks after each chunk
 - Saves checkpoints every 10 chunks for resume capability
 
+UPDATED CONFIGURATION:
+- 12 comprehensive chapters covering Mechanics through Electromagnetism & Optics
+- Target: 100,000 words total (~8,333 words per chapter)
+- 25 sections per chapter × 4+ chunks per section
+- Model: gemma3:1b (fast, efficient for prose generation)
+
 Requirements:
 - Ollama running locally on localhost:11434
-- Model: deepseek-r1:1.5b (will be pulled if missing)
+- Model: gemma3:1b (pull if needed with: ollama pull gemma3:1b)
 - Ubuntu with 16GB RAM (script uses ≤8GB)
 
-Output: physics1_book_50k.md
+Output: physics1_book_100k.md
 """
 
 import json
@@ -36,21 +43,21 @@ except ImportError:
 # CONFIGURATION
 # =============================================================================
 
-MODEL_NAME = "deepseek-r1:8b"
-OUTPUT_FILE = "physics1_book_50k.md"
+MODEL_NAME = "gemma3:1b"
+OUTPUT_FILE = "physics1_book_100k.md"
 CHECKPOINT_FILE = "generation_checkpoint.json"
 FACTS_CACHE_FILE = "facts_cache.json"
 
 # Generation parameters for minimal hallucination
-TEMPERATURE = 0.1
-REPETITION_PENALTY = 1.2
+TEMPERATURE = 0.3
+REPETITION_PENALTY = 1.1
 MAX_TOKENS_PER_CHUNK = 200  # ~100-150 words
 
-# Target structure
-TARGET_TOTAL_WORDS = 10000  # Test mode: Only Chapter 1
-WORDS_PER_CHAPTER = 10000
+# Target structure - 100,000 words across 12 chapters
+TARGET_TOTAL_WORDS = 100000
+WORDS_PER_CHAPTER = 8333  # ~8333 words per chapter × 12 = 100,000
 SECTIONS_PER_CHAPTER = 25
-CHAPTERS_TO_GENERATE = 1  # Test mode: Only generate Chapter 1
+CHAPTERS_TO_GENERATE = 12  # Generate all 12 chapters
 CHUNKS_PER_SECTION = 4  # Each section has 3-5 chunks
 TARGET_WORDS_PER_CHUNK = 120
 
@@ -170,7 +177,7 @@ MASTER_OUTLINE = {
         "Conceptual Questions - Chapter 4",
         "Chapter 4 Comprehensive Review"
     ],
-    "Chapter 5: Thermodynamics, Fluids, and Oscillations": [
+    "Chapter 5: Thermodynamics and Heat": [
         "Temperature and Thermal Equilibrium",
         "Temperature Scales and Conversions",
         "Thermal Expansion of Solids and Liquids",
@@ -188,14 +195,203 @@ MASTER_OUTLINE = {
         "Heat Engines and Efficiency",
         "Second Law of Thermodynamics",
         "Entropy Introduction",
+        "Carnot Cycle and Maximum Efficiency",
+        "Refrigerators and Heat Pumps",
+        "Statistical Interpretation of Entropy",
+        "Thermal Properties of Materials",
+        "Phase Diagrams",
+        "Real Gases and Van der Waals Equation",
+        "Conceptual Questions - Chapter 5",
+        "Chapter 5 Review and Summary"
+    ],
+    "Chapter 6: Fluid Mechanics": [
         "Fluid Statics - Pressure and Density",
+        "Variation of Pressure with Depth",
+        "Pressure Measurement Instruments",
         "Archimedes' Principle and Buoyancy",
+        "Buoyancy Applications",
         "Fluid Dynamics - Continuity Equation",
         "Bernoulli's Equation",
-        "Simple Harmonic Motion Revisited",
-        "Damped and Driven Oscillations",
-        "Wave Motion Introduction",
-        "Chapter 5 Summary and Final Review"
+        "Applications of Bernoulli's Principle",
+        "Viscosity and Poiseuille's Law",
+        "Turbulent Flow and Reynolds Number",
+        "Surface Tension and Capillarity",
+        "Fluids in Motion - Streamlines",
+        "Flow Rate Calculations",
+        "Pumps and Hydraulic Systems",
+        "Blood Flow and Cardiovascular Physics",
+        "Aerodynamics Introduction",
+        "Drag Coefficient",
+        "Lift Force on Airfoils",
+        "Compressible Flow Basics",
+        "Shock Waves",
+        "Fluid Measurements",
+        "Computational Fluid Dynamics Overview",
+        "Environmental Fluid Mechanics",
+        "Conceptual Questions - Chapter 6",
+        "Chapter 6 Review and Practice"
+    ],
+    "Chapter 7: Oscillations and Wave Motion": [
+        "Simple Harmonic Motion - Fundamentals",
+        "Mass-Spring System",
+        "The Simple Pendulum",
+        "The Physical Pendulum",
+        "Damped Oscillations",
+        "Driven Oscillations and Resonance",
+        "Resonance Applications and Dangers",
+        "Wave Properties and Classification",
+        "Traveling Waves",
+        "Wave Function and Mathematical Description",
+        "Speed of Waves on Strings",
+        "Energy Transport in Waves",
+        "Superposition Principle",
+        "Interference of Waves",
+        "Standing Waves",
+        "Standing Waves on Strings",
+        "Standing Waves in Air Columns",
+        "Beats and Beat Frequency",
+        "Fourier Analysis Introduction",
+        "Dispersion and Group Velocity",
+        "Wave Packets",
+        "Seismic Waves",
+        "Water Waves",
+        "Conceptual Questions - Chapter 7",
+        "Chapter 7 Comprehensive Review"
+    ],
+    "Chapter 8: Sound and Acoustics": [
+        "Sound Waves - Nature and Properties",
+        "Speed of Sound in Different Media",
+        "Intensity and Decibel Scale",
+        "Sound Level Calculations",
+        "Standing Sound Waves",
+        "Musical Instruments - Strings",
+        "Musical Instruments - Wind",
+        "Musical Instruments - Percussion",
+        "Timbre and Harmonics",
+        "Doppler Effect",
+        "Doppler Effect Applications",
+        "Sonic Booms",
+        "Ultrasound and Medical Imaging",
+        "Sonar Technology",
+        "Room Acoustics",
+        "Reverberation Time",
+        "Sound Absorption",
+        "Noise Control",
+        "Human Hearing Mechanism",
+        "Psychoacoustics Basics",
+        "Audio Recording and Reproduction",
+        "Digital Audio Fundamentals",
+        "Acoustic Ecology",
+        "Conceptual Questions - Chapter 8",
+        "Chapter 8 Review and Summary"
+    ],
+    "Chapter 9: Electrostatics": [
+        "Electric Charge - Properties",
+        "Conductors and Insulators",
+        "Charging by Induction",
+        "Coulomb's Law",
+        "Electric Field - Definition",
+        "Electric Field of Point Charges",
+        "Electric Field Lines",
+        "Electric Dipoles",
+        "Gauss's Law",
+        "Applications of Gauss's Law",
+        "Electric Potential Energy",
+        "Electric Potential",
+        "Potential Difference",
+        "Equipotential Surfaces",
+        "Electric Potential of Point Charges",
+        "Electric Potential of Continuous Distributions",
+        "Capacitance",
+        "Capacitors in Series and Parallel",
+        "Energy Stored in Capacitors",
+        "Dielectrics",
+        "Molecular View of Dielectrics",
+        "Electric Fields in Matter",
+        "Electrostatic Applications",
+        "Conceptual Questions - Chapter 9",
+        "Chapter 9 Review and Practice"
+    ],
+    "Chapter 10: Electric Current and Circuits": [
+        "Electric Current - Definition",
+        "Current Density and Drift Velocity",
+        "Resistance and Resistivity",
+        "Temperature Dependence of Resistance",
+        "Ohm's Law",
+        "Electrical Power",
+        "Energy in Electric Circuits",
+        "Electromotive Force",
+        "Kirchhoff's Rules",
+        "DC Circuit Analysis",
+        "RC Circuits",
+        "Charging and Discharging Capacitors",
+        "Series and Parallel Combinations",
+        "Wheatstone Bridge",
+        "Potentiometer",
+        "Galvanometers and Ammeters",
+        "Voltmeters",
+        "Household Wiring",
+        "Electrical Safety",
+        "Superconductivity Introduction",
+        "Semiconductors Basics",
+        "Diodes and Transistors",
+        "Integrated Circuits Overview",
+        "Conceptual Questions - Chapter 10",
+        "Chapter 10 Comprehensive Review"
+    ],
+    "Chapter 11: Magnetism": [
+        "Magnetic Fields and Forces",
+        "Magnetic Force on Moving Charges",
+        "Motion of Charged Particles in Magnetic Fields",
+        "Applications - Mass Spectrometer",
+        "Applications - Cyclotron",
+        "Magnetic Force on Current-Carrying Wires",
+        "Torque on Current Loops",
+        "Electric Motors",
+        "Hall Effect",
+        "Biot-Savart Law",
+        "Magnetic Field of Straight Wires",
+        "Ampere's Law",
+        "Solenoids and Toroids",
+        "Magnetic Flux",
+        "Faraday's Law of Induction",
+        "Lenz's Law",
+        "Induced EMF and Electric Fields",
+        "Generators",
+        "Eddy Currents",
+        "Inductance",
+        "RL Circuits",
+        "Energy in Magnetic Fields",
+        "LC Oscillations",
+        "Conceptual Questions - Chapter 11",
+        "Chapter 11 Review and Summary"
+    ],
+    "Chapter 12: Electromagnetic Waves and Optics": [
+        "Maxwell's Equations",
+        "Electromagnetic Waves",
+        "Speed of Light",
+        "Energy in Electromagnetic Waves",
+        "Momentum and Radiation Pressure",
+        "Electromagnetic Spectrum",
+        "Production of EM Waves",
+        "Reflection and Refraction",
+        "Snell's Law",
+        "Total Internal Reflection",
+        "Dispersion and Prisms",
+        "Polarization",
+        "Malus's Law",
+        "Thin Film Interference",
+        "Diffraction",
+        "Single-Slit Diffraction",
+        "Double-Slit Interference",
+        "Diffraction Gratings",
+        "Geometric Optics - Mirrors",
+        "Geometric Optics - Lenses",
+        "Optical Instruments",
+        "The Human Eye",
+        "Lasers",
+        "Conceptual Questions - Chapter 12",
+        "Chapter 12 Final Review"
     ]
 }
 

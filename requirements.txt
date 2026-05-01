@@ -1,1 +1,4 @@
 ollama>=0.1.7
+# Physics Textbook Generator Requirements
+# Run: pip install -r requirements.txt
+# Then: python3 generate_physics_50k.py
